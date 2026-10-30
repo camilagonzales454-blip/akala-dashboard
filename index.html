@@ -267,7 +267,7 @@
     <div class="table-wrap"><table id="campTable"></table></div>
   </div>
 
-  <footer>Datos: Google Sheets “Akala - Meta Ads para Looker Studio” vía Apps Script · El alcance total es la suma por campaña y puede contar dos veces a una misma persona.</footer>
+  <footer>Datos: Google Sheets “Akala - Meta Ads para Looker Studio” vía Apps Script · El alcance total viene de la pestaña “Alcance cuenta” (personas únicas, sin sumar campañas).</footer>
 </div>
 
 <script>
@@ -425,12 +425,19 @@ function prepare(raw) {
     };
   }).filter(a => a.anuncio);
 
+  // Alcance deduplicado de la cuenta (pestaña "Alcance cuenta"): una fila "Total" y una por mes.
+  const cuenta = {};
+  (d['Alcance cuenta'] || []).forEach(r => {
+    const periodo = String(pick(r, 'Periodo')).trim();
+    if (periodo) cuenta[norm(periodo) === 'total' ? 'total' : periodo] = { alcance: num(pick(r, 'Alcance')), impresiones: num(pick(r, 'Impresiones')) };
+  });
+
   const campInfo = {};
   camp.forEach(c => {
     const i = campInfo[c.nombre] || (campInfo[c.nombre] = { meses: new Set(), tipo: c.tipo });
     i.meses.add(c.mes);
   });
-  return { camp, diario, ads, campInfo };
+  return { camp, diario, ads, campInfo, cuenta };
 }
 
 /* ---------- Filtros ---------- */
@@ -667,7 +674,13 @@ function renderKpis(c, d, a) {
   const conv = sum(ventas, x => x.resultado);
   const invVentas = sum(ventas, x => x.inversion);
   const impr = sum(c, x => x.impresiones);
-  const alcance = sum(c, x => x.alcance);
+  // El alcance no se suma entre campañas: sin filtro de campaña se usa el alcance deduplicado de la cuenta.
+  let alcance = sum(c, x => x.alcance), alcanceSub = 'suma por campaña', imprFrec = impr;
+  const ctaRow = DATA.cuenta[state.mes || 'total'];
+  if (c.length === 1) alcanceSub = 'personas únicas';
+  else if (!state.tipo && !state.campana && !state.formato && ctaRow && ctaRow.alcance) {
+    alcance = ctaRow.alcance; imprFrec = ctaRow.impresiones || impr; alcanceSub = 'personas únicas de la cuenta';
+  } else if (c.length > 1) alcanceSub = 'suma por campaña (puede repetir personas)';
   const ctr = div(sum(c, x => x.ctr * x.impresiones), impr);
   const cpm = div(inv, impr) * 1000;
   const inter = sum(c, x => x.reacciones + x.guardados + x.comentarios);
@@ -676,8 +689,8 @@ function renderKpis(c, d, a) {
     { lbl: 'Inversión total', val: fmtSoles(inv), sub: c.length + (c.length === 1 ? ' campaña' : ' campañas') },
     { lbl: 'Conversaciones WhatsApp', val: fmtInt(conv), sub: 'en campañas de ventas', hi: true },
     { lbl: 'Costo por conversación', val: conv ? fmtSoles(invVentas / conv) : '—', sub: 'sobre ' + fmtSoles(invVentas) + ' de ventas', hi: true },
-    { lbl: 'Alcance', val: fmtInt(alcance), sub: 'suma por campaña' },
-    { lbl: 'Impresiones', val: fmtInt(impr), sub: 'frecuencia ' + (alcance ? (impr / alcance).toFixed(2) : '—') },
+    { lbl: 'Alcance', val: fmtInt(alcance), sub: alcanceSub },
+    { lbl: 'Impresiones', val: fmtInt(impr), sub: 'frecuencia ' + (alcance ? (imprFrec / alcance).toFixed(2) : '—') },
     { lbl: 'CTR promedio', val: isFinite(ctr) ? fmtPct(ctr) : '—', sub: fmtInt(clics) + ' clics' },
     { lbl: 'CPM promedio', val: isFinite(cpm) ? fmtSoles(cpm) : '—', sub: 'costo por mil impresiones' },
     { lbl: 'Interacciones', val: fmtInt(inter), sub: 'reacciones, guardados y comentarios' }
