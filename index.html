@@ -258,7 +258,7 @@
     <h2 class="section-title">Marca y tráfico</h2>
     <div class="card full">
       <header><div><h3>Campañas con otro objetivo</h3><p>Se muestran aparte porque su resultado no son conversaciones</p></div></header>
-      <div class="brand-cards" id="brandCards"></div>
+      <div class="table-wrap"><table id="brandTable"></table></div>
     </div>
   </div>
 
@@ -290,7 +290,7 @@ const SERIES = [COL.terracota, COL.champan, COL.marron, COL.empolvado, COL.arena
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
-const state = { mes: '', tipo: '', campana: '', formato: '', cmpA: '', cmpB: '', adsSort: { key: 'costo', dir: 1 }, campSort: { key: 'inversion', dir: -1 } };
+const state = { mes: '', tipo: '', campana: '', formato: '', cmpA: '', cmpB: '', adsSort: { key: 'costo', dir: 1 }, campSort: { key: 'inversion', dir: -1 }, brandSort: { key: 'inversion', dir: -1 } };
 let DATA = null;
 let timer = null, countdownTimer = null, nextAt = 0, loading = false;
 const charts = {};
@@ -824,21 +824,23 @@ function renderCamps(c) {
 function renderBrand(c, a) {
   const otros = c.filter(x => !isConv(x));
   $('brandSection').style.display = otros.length ? '' : 'none';
-  $('brandCards').innerHTML = otros.map(x => {
+  const rows = otros.map(x => {
     const ads = a.filter(k => k.campana === x.nombre);
-    const ig = sum(ads, k => k.visitasIG), tp = sum(ads, k => k.thruplays);
-    return '<div class="bcard"><h3>' + esc(x.nombre) + '</h3><dl>' +
-      '<dt>' + esc(x.tipoRes || 'Resultado') + '</dt><dd class="hi">' + fmtInt(x.resultado) + '</dd>' +
-      '<dt>Costo por resultado</dt><dd class="hi">' + money(div(x.inversion, x.resultado)) + '</dd>' +
-      '<dt>Inversión</dt><dd>' + fmtSoles(x.inversion) + '</dd>' +
-      '<dt>Alcance</dt><dd>' + fmtInt(x.alcance) + '</dd>' +
-      '<dt>CPM</dt><dd>' + fmtSoles(x.cpm) + '</dd>' +
-      '<dt>CTR</dt><dd>' + fmtPct(x.ctr) + '</dd>' +
-      (ig ? '<dt>Visitas al perfil IG</dt><dd>' + fmtInt(ig) + '</dd>' : '') +
-      (tp ? '<dt>ThruPlays</dt><dd>' + fmtInt(tp) + '</dd>' : '') +
-      '<dt>Guardados</dt><dd>' + fmtInt(x.guardados) + '</dd>' +
-      '</dl></div>';
-  }).join('');
+    return { ...x, costoCalc: div(x.inversion, x.resultado), visitasIG: sum(ads, k => k.visitasIG), thruplays: sum(ads, k => k.thruplays) };
+  });
+  const hi = v => '<span style="color:var(--terracota);font-weight:700">' + v + '</span>';
+  sortable('brandTable', [
+    { k: 'nombre', t: 'Campaña', f: r => '<b>' + esc(r.nombre) + '</b>' },
+    { k: 'resultado', t: 'Resultado', num: 1, f: r => hi(fmtInt(r.resultado)) + ' <span style="color:var(--gris);font-size:11px">' + esc(r.tipoRes.toLowerCase()) + '</span>' },
+    { k: 'costoCalc', t: 'Costo/resultado', num: 1, f: r => hi(money(r.costoCalc)) },
+    { k: 'inversion', t: 'Inversión', num: 1, f: r => fmtSoles(r.inversion) },
+    { k: 'alcance', t: 'Alcance', num: 1, f: r => fmtInt(r.alcance) },
+    { k: 'cpm', t: 'CPM', num: 1, f: r => fmtSoles(r.cpm) },
+    { k: 'ctr', t: 'CTR', num: 1, f: r => fmtPct(r.ctr) },
+    { k: 'visitasIG', t: 'Visitas al perfil IG', num: 1, f: r => fmtInt(r.visitasIG) },
+    { k: 'thruplays', t: 'ThruPlays', num: 1, f: r => fmtInt(r.thruplays) },
+    { k: 'guardados', t: 'Guardados', num: 1, f: r => fmtInt(r.guardados) }
+  ], rows, state.brandSort, () => renderBrand(c, a));
 }
 
 /* ---------- Render principal ---------- */
