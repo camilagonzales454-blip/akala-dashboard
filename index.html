@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AKALA · Dashboard Meta Ads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --terracota: #9B6662;
+    --nude: #E8C9BF;
+    --marfil: #F7F1EC;
+    --cafe: #604039;
+    --champan: #C8A57B;
+    --blanco: #FFFFFF;
+    --gris: #82746F;
+    --empolvado: #D9A8A0;
+    --marron: #80635C;
+    --arena: #B8A68E;
+    --borde: #EADDD5;
+    --radio: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--marfil);
+    color: var(--marron);
+    font-family: "Montserrat", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  h1, h2, h3 { color: var(--cafe); font-family: "Cormorant Garamond", Georgia, serif; margin: 0; }
+  h1 { font-size: 30px; font-weight: 700; letter-spacing: .5px; }
+  h2 { font-size: 22px; font-weight: 600; }
+  h3 { font-size: 19px; font-weight: 600; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  /* Encabezado */
+  header.top {
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;
+    padding-bottom: 18px; border-bottom: 1px solid var(--borde); margin-bottom: 18px;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--terracota); color: var(--blanco);
+    display: grid; place-items: center;
+    font-family: "Cormorant Garamond", serif; font-size: 26px; font-weight: 700;
+  }
+  .brand small { display: block; color: var(--gris); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .status { color: var(--gris); font-size: 12px; text-align: right; min-width: 170px; }
+  .status b { color: var(--cafe); font-weight: 600; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--arena); margin-right: 6px; vertical-align: middle; }
+  .dot.ok { background: #7E9C6B; }
+  .dot.err { background: var(--terracota); }
+  .dot.load { background: var(--champan); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--gris); }
+  select {
+    appearance: none; -webkit-appearance: none;
+    background: var(--blanco) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2382746F'/%3E%3C/svg%3E") no-repeat right 12px center;
+    border: 1px solid var(--borde); border-radius: 10px;
+    padding: 9px 32px 9px 12px; font: inherit; font-size: 13px; color: var(--cafe); min-width: 150px; cursor: pointer;
+  }
+  select:focus, button:focus-visible { outline: 2px solid var(--empolvado); outline-offset: 1px; }
+  button.btn {
+    background: var(--terracota); color: var(--blanco); border: 0; border-radius: 10px;
+    padding: 10px 18px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; align-self: flex-end;
+  }
+  button.btn:hover { background: var(--cafe); }
+  button.btn:disabled { opacity: .6; cursor: progress; }
+  button.ghost { background: transparent; color: var(--terracota); border: 1px solid var(--empolvado); }
+  button.ghost:hover { background: var(--nude); color: var(--cafe); }
+  .spin { width: 14px; height: 14px; display: inline-block; }
+  button:disabled .spin { animation: rot 1s linear infinite; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+  /* Filtros */
+  .filters {
+    background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio);
+    padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 18px;
+  }
+  .filters .title { font-family: "Cormorant Garamond", serif; color: var(--cafe); font-size: 18px; font-weight: 600; margin-right: 6px; align-self: center; }
+  .chips { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { background: var(--nude); color: var(--cafe); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+
+  .alert { display: none; background: #FBEDEA; border: 1px solid var(--empolvado); color: var(--cafe); border-radius: var(--radio); padding: 12px 16px; margin-bottom: 18px; }
+  .alert.show { display: block; }
+
+  /* KPIs */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+  .kpi { background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio); padding: 14px 16px; }
+  .kpi .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--gris); }
+  .kpi .val { font-family: "Cormorant Garamond", serif; font-size: 32px; font-weight: 700; color: var(--cafe); line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .kpi .sub { font-size: 12px; color: var(--gris); }
+  .kpi.hi { background: var(--terracota); border-color: var(--terracota); }
+  .kpi.hi .lbl, .kpi.hi .sub { color: var(--nude); }
+  .kpi.hi .val { color: var(--blanco); }
+  .insight { background: var(--nude); color: var(--cafe); border-radius: var(--radio); padding: 12px 16px; margin-bottom: 18px; font-size: 13px; }
+  .insight b { color: var(--terracota); }
+
+  /* Tarjetas */
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .card { background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio); padding: 16px 18px; min-width: 0; }
+  .card.full { grid-column: 1 / -1; }
+  .card header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+  .card header p { margin: 2px 0 0; color: var(--gris); font-size: 12px; }
+  .chart { position: relative; height: 290px; }
+  .empty { display: grid; place-items: center; height: 100%; color: var(--gris); font-size: 13px; }
+  .section-title { margin: 26px 0 12px; display: flex; align-items: center; gap: 10px; }
+  .section-title::after { content: ""; flex: 1; height: 1px; background: var(--borde); }
+
+  /* Tablas */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--gris); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .8px; padding: 8px 10px; border-bottom: 1px solid var(--borde); white-space: nowrap; cursor: pointer; user-select: none; }
+  th.num, td.num { text-align: right; }
+  th .arr { color: var(--empolvado); }
+  td { padding: 9px 10px; border-bottom: 1px solid #F2E8E2; color: var(--cafe); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  tr.best td { background: #F6E9E5; }
+  tr.best td:first-child { box-shadow: inset 3px 0 0 var(--terracota); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: var(--marfil); color: var(--marron); border: 1px solid var(--borde); }
+  .tag.hi { background: var(--terracota); color: var(--blanco); border-color: var(--terracota); }
+
+  /* Comparador */
+  .cmp-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 10px; }
+  .vs { font-family: "Cormorant Garamond", serif; color: var(--terracota); font-size: 22px; font-weight: 700; padding-bottom: 6px; }
+  td.win { color: var(--terracota); font-weight: 700; }
+  td.win::after { content: " ●"; font-size: 9px; vertical-align: middle; }
+  .verdict { margin-top: 12px; padding: 10px 14px; border-radius: 10px; background: var(--marfil); color: var(--cafe); font-size: 13px; }
+  .verdict b { color: var(--terracota); }
+
+  /* Marca */
+  .brand-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .bcard { border: 1px solid var(--borde); border-radius: 12px; padding: 14px; background: var(--marfil); }
+  .bcard h3 { margin-bottom: 8px; }
+  .bcard dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0; font-size: 13px; }
+  .bcard dt { color: var(--gris); }
+  .bcard dd { margin: 0; color: var(--cafe); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+  .bcard dd.hi { color: var(--terracota); }
+
+  footer { margin-top: 28px; color: var(--gris); font-size: 12px; text-align: center; }
+
+  @media (max-width: 960px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    h1 { font-size: 24px; }
+    .kpi .val { font-size: 26px; }
+    .controls, .filters { width: 100%; }
+    select { min-width: 0; width: 100%; }
+    label.field { flex: 1 1 140px; }
+    .status { text-align: left; }
+    .chart { height: 250px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">A</div>
+      <div>
+        <small>Meta Ads · Resultados</small>
+        <h1>AKALA Dashboard</h1>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">Conectando…</span><br><span id="countdown"></span></div>
+      <label class="field">Actualización automática
+        <select id="interval">
+          <option value="0">Apagada</option>
+          <option value="1">Cada 1 minuto</option>
+          <option value="5">Cada 5 minutos</option>
+          <option value="15">Cada 15 minutos</option>
+          <option value="30">Cada 30 minutos</option>
+          <option value="60">Cada 1 hora</option>
+        </select>
+      </label>
+      <button class="btn" id="refresh" type="button">
+        <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  <section class="filters" aria-label="Filtros">
+    <span class="title">Filtros</span>
+    <label class="field">Mes <select id="fMes"></select></label>
+    <label class="field">Tipo de campaña <select id="fTipo"></select></label>
+    <label class="field">Campaña <select id="fCampana"></select></label>
+    <label class="field">Formato <select id="fFormato"></select></label>
+    <button class="btn ghost" id="clear" type="button">Limpiar filtros</button>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <div class="alert" id="alert"></div>
+
+  <section class="kpis" id="kpis"></section>
+  <div class="insight" id="insight"></div>
+
+  <h2 class="section-title">Rendimiento de ventas (WhatsApp)</h2>
+  <div class="grid">
+    <div class="card">
+      <header><div><h3>Costo por conversación por campaña</h3><p>Menor es mejor · en rosa terracota la más eficiente</p></div></header>
+      <div class="chart"><canvas id="chCosto"></canvas></div>
+    </div>
+    <div class="card">
+      <header><div><h3>Inversión y conversaciones por mes</h3><p>Barras: inversión (S/) · Línea: conversaciones</p></div></header>
+      <div class="chart"><canvas id="chMes"></canvas></div>
+    </div>
+    <div class="card full">
+      <header><div><h3>Evolución diaria</h3><p>Barras: inversión diaria (S/) · Línea: conversaciones</p></div></header>
+      <div class="chart"><canvas id="chDiario"></canvas></div>
+    </div>
+    <div class="card">
+      <header><div><h3>Mejor día de la semana</h3><p>Barras: conversaciones · Línea: costo por conversación (S/)</p></div></header>
+      <div class="chart"><canvas id="chDia"></canvas></div>
+    </div>
+    <div class="card">
+      <header><div><h3>Distribución de la inversión</h3><p>Participación de cada campaña en el gasto</p></div></header>
+      <div class="chart"><canvas id="chDist"></canvas></div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Comparador A/B</h2>
+  <div class="card full">
+    <div class="cmp-controls">
+      <label class="field">Campaña A <select id="cmpA"></select></label>
+      <span class="vs">vs</span>
+      <label class="field">Campaña B <select id="cmpB"></select></label>
+    </div>
+    <div class="table-wrap"><table id="cmpTable"></table></div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <h2 class="section-title">Anuncios y engagement</h2>
+  <div class="grid">
+    <div class="card full">
+      <header><div><h3>Ranking de anuncios</h3><p>Ordenado por costo por conversación · haz clic en una columna para reordenar</p></div></header>
+      <div class="table-wrap"><table id="adsTable"></table></div>
+    </div>
+    <div class="card full">
+      <header><div><h3>Interacciones por anuncio</h3><p>Reacciones, guardados y comentarios · ThruPlays en la línea</p></div></header>
+      <div class="chart"><canvas id="chEng"></canvas></div>
+    </div>
+  </div>
+
+  <div id="brandSection">
+    <h2 class="section-title">Marca y tráfico</h2>
+    <div class="card full">
+      <header><div><h3>Campañas con otro objetivo</h3><p>Se muestran aparte porque su resultado no son conversaciones</p></div></header>
+      <div class="brand-cards" id="brandCards"></div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Detalle de campañas</h2>
+  <div class="card full">
+    <div class="table-wrap"><table id="campTable"></table></div>
+  </div>
+
+  <footer>Datos: Google Sheets “Akala - Meta Ads para Looker Studio” vía Apps Script · El alcance total es la suma por campaña y puede contar dos veces a una misma persona.</footer>
+</div>
+
+<script>
+/* ================= CONFIGURACIÓN ================= */
+const CONFIG = {
+  // URL de tu Web App de Apps Script (termina en /exec)
+  API_URL: 'https://script.google.com/macros/s/AKfycbwKPibhBG6DhlgvfA8e7QnSKB-66wSVhaCo-VyNYifft08dsTvXL70_LUpLKsIwjpVCTg/exec',
+  // Si pusiste una CLAVE en Apps Script, escríbela aquí
+  API_KEY: '',
+  // Intervalo por defecto en minutos (0 = apagado)
+  DEFAULT_INTERVAL: 5
+};
+/* ================================================= */
+
+const COL = {
+  terracota: '#9B6662', nude: '#E8C9BF', marfil: '#F7F1EC', cafe: '#604039', champan: '#C8A57B',
+  blanco: '#FFFFFF', gris: '#82746F', empolvado: '#D9A8A0', marron: '#80635C', arena: '#B8A68E'
+};
+const SERIES = [COL.terracota, COL.champan, COL.marron, COL.empolvado, COL.arena, COL.cafe, COL.nude, COL.gris];
+const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+const state = { mes: '', tipo: '', campana: '', formato: '', cmpA: '', cmpB: '', adsSort: { key: 'costo', dir: 1 }, campSort: { key: 'inversion', dir: -1 } };
+let DATA = null;
+let timer = null, countdownTimer = null, nextAt = 0, loading = false;
+const charts = {};
+
+/* ---------- Utilidades ---------- */
+const $ = id => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem('akala_' + k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('akala_' + k, v); } catch (e) {} }
+};
+function norm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function pick(row, ...names) {
+  if (!row._n) { row._n = {}; Object.keys(row).forEach(k => { row._n[norm(k)] = row[k]; }); }
+  for (const n of names) { const v = row._n[norm(n)]; if (v !== undefined) return v; }
+  return '';
+}
+function num(v) {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === 'number') return v;
+  let s = String(v).replace(/[^\d,.\-]/g, '');
+  if (!s) return 0;
+  if (s.includes(',') && s.includes('.')) {
+    s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  } else if (s.includes(',')) {
+    s = /^-?\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+const fmtSoles = (v, d = 2) => 'S/ ' + (isFinite(v) ? v : 0).toLocaleString('es-PE', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtInt = v => Math.round(v || 0).toLocaleString('es-PE');
+const fmtPct = v => (isFinite(v) ? v : 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+const div = (a, b) => (b ? a / b : NaN);
+const sum = (arr, f) => arr.reduce((t, x) => t + (f(x) || 0), 0);
+function mesLabel(m) {
+  const p = String(m).match(/^(\d{4})-(\d{1,2})/);
+  return p ? MESES[+p[2] - 1] + ' ' + p[1] : String(m);
+}
+function fechaLabel(f) {
+  const p = String(f).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return p ? (+p[3]) + ' ' + MESES[+p[2] - 1] : String(f);
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+const isConv = c => /conversaci/i.test(c.tipoRes) || (!c.tipoRes && /venta|whatsapp/i.test(c.tipo));
+
+/* ---------- Carga de datos ---------- */
+function buildUrl() {
+  const u = new URL(CONFIG.API_URL);
+  if (CONFIG.API_KEY) u.searchParams.set('key', CONFIG.API_KEY);
+  u.searchParams.set('t', Date.now());
+  return u.toString();
+}
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const cb = 'akalaCb_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
+    const s = document.createElement('script');
+    const t = setTimeout(() => { cleanup(); reject(new Error('La conexión tardó demasiado')); }, 30000);
+    function cleanup() { clearTimeout(t); try { delete window[cb]; } catch (e) { window[cb] = undefined; } s.remove(); }
+    window[cb] = d => { cleanup(); resolve(d); };
+    s.onerror = () => { cleanup(); reject(new Error('No se pudo conectar con Apps Script')); };
+    s.src = url + '&callback=' + cb;
+    document.head.appendChild(s);
+  });
+}
+async function fetchData() {
+  const url = buildUrl();
+  try {
+    const r = await fetch(url, { cache: 'no-store', redirect: 'follow' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } catch (e) {
+    return jsonp(url); // respaldo si el navegador bloquea fetch (por ejemplo, al abrir el archivo localmente)
+  }
+}
+
+function prepare(raw) {
+  const d = raw.datos || raw;
+  const camp = (d['Campañas'] || d['Campanas'] || []).map(r => ({
+    nombre: String(pick(r, 'Campaña')).trim(),
+    tipo: String(pick(r, 'Tipo')).trim(),
+    mes: String(pick(r, 'Mes')).trim(),
+    estado: String(pick(r, 'Estado')).trim(),
+    inversion: num(pick(r, 'Inversión (S/)', 'Inversión')),
+    resultado: num(pick(r, 'Resultado')),
+    tipoRes: String(pick(r, 'Tipo de resultado')).trim(),
+    costoRes: num(pick(r, 'Costo por resultado (S/)', 'Costo por resultado')),
+    alcance: num(pick(r, 'Alcance')),
+    impresiones: num(pick(r, 'Impresiones')),
+    cpm: num(pick(r, 'CPM (S/)', 'CPM')),
+    ctr: num(pick(r, 'CTR (%)', 'CTR')),
+    clics: num(pick(r, 'Clics')),
+    reacciones: num(pick(r, 'Reacciones')),
+    guardados: num(pick(r, 'Guardados')),
+    comentarios: num(pick(r, 'Comentarios'))
+  })).filter(c => c.nombre);
+
+  const diario = (d['Diario'] || []).map(r => ({
+    fecha: String(pick(r, 'Fecha')).trim(),
+    mes: String(pick(r, 'Mes')).trim(),
+    dia: String(pick(r, 'Día de la semana')).trim(),
+    campana: String(pick(r, 'Campaña')).trim(),
+    tipo: String(pick(r, 'Tipo')).trim(),
+    inversion: num(pick(r, 'Inversión (S/)', 'Inversión')),
+    conv: num(pick(r, 'Conversaciones')),
+    clics: num(pick(r, 'Clics')),
+    alcance: num(pick(r, 'Alcance diario', 'Alcance')),
+    impresiones: num(pick(r, 'Impresiones'))
+  })).filter(x => x.fecha);
+  diario.forEach(x => {
+    if (!x.mes) x.mes = x.fecha.slice(0, 7);
+    if (!x.dia) { const dt = new Date(x.fecha + 'T12:00:00'); if (!isNaN(dt)) x.dia = DIAS[(dt.getDay() + 6) % 7]; }
+  });
+
+  const ads = (d['Anuncios'] || []).map(r => {
+    const conv = num(pick(r, 'Conversaciones'));
+    const inv = num(pick(r, 'Inversión (S/)', 'Inversión'));
+    return {
+      anuncio: String(pick(r, 'Anuncio')).trim(),
+      campana: String(pick(r, 'Campaña')).trim(),
+      formato: String(pick(r, 'Formato')).trim() || 'Sin formato',
+      inversion: inv,
+      conv: conv,
+      costo: conv ? inv / conv : NaN,
+      visitasIG: num(pick(r, 'Visitas al perfil IG')),
+      alcance: num(pick(r, 'Alcance')),
+      impresiones: num(pick(r, 'Impresiones')),
+      ctr: num(pick(r, 'CTR (%)', 'CTR')),
+      reacciones: num(pick(r, 'Reacciones')),
+      guardados: num(pick(r, 'Guardados')),
+      comentarios: num(pick(r, 'Comentarios')),
+      thruplays: num(pick(r, 'ThruPlays'))
+    };
+  }).filter(a => a.anuncio);
+
+  const campInfo = {};
+  camp.forEach(c => {
+    const i = campInfo[c.nombre] || (campInfo[c.nombre] = { meses: new Set(), tipo: c.tipo });
+    i.meses.add(c.mes);
+  });
+  return { camp, diario, ads, campInfo };
+}
+
+/* ---------- Filtros ---------- */
+function filtered() {
+  const { camp, diario, ads, campInfo } = DATA;
+  const formatoOk = name => !state.formato || ads.some(a => a.campana === name && a.formato === state.formato);
+  const c = camp.filter(x =>
+    (!state.mes || x.mes === state.mes) &&
+    (!state.tipo || x.tipo === state.tipo) &&
+    (!state.campana || x.nombre === state.campana) &&
+    formatoOk(x.nombre));
+  const d = diario.filter(x =>
+    (!state.mes || x.mes === state.mes) &&
+    (!state.tipo || (x.tipo || (campInfo[x.campana] || {}).tipo) === state.tipo) &&
+    (!state.campana || x.campana === state.campana) &&
+    formatoOk(x.campana));
+  const a = ads.filter(x => {
+    const info = campInfo[x.campana];
+    return (!state.mes || (info && info.meses.has(state.mes))) &&
+      (!state.tipo || (info && info.tipo === state.tipo)) &&
+      (!state.campana || x.campana === state.campana) &&
+      (!state.formato || x.formato === state.formato);
+  });
+  return { c, d, a };
+}
+
+function fillSelect(sel, values, current, allLabel, labelFn) {
+  const html = ['<option value="">' + allLabel + '</option>']
+    .concat(values.map(v => '<option value="' + esc(v) + '">' + esc(labelFn ? labelFn(v) : v) + '</option>'));
+  sel.innerHTML = html.join('');
+  sel.value = values.includes(current) ? current : '';
+  return sel.value;
+}
+function buildFilters() {
+  const { camp, diario, ads } = DATA;
+  const meses = [...new Set(camp.map(c => c.mes).concat(diario.map(d => d.mes)).filter(Boolean))].sort();
+  const tipos = [...new Set(camp.map(c => c.tipo).filter(Boolean))].sort();
+  const campanas = [...new Set(camp.map(c => c.nombre))];
+  const formatos = [...new Set(ads.map(a => a.formato).filter(Boolean))].sort();
+  state.mes = fillSelect($('fMes'), meses, state.mes, 'Todos los meses', mesLabel);
+  state.tipo = fillSelect($('fTipo'), tipos, state.tipo, 'Todos los tipos');
+  state.campana = fillSelect($('fCampana'), campanas, state.campana, 'Todas las campañas');
+  state.formato = fillSelect($('fFormato'), formatos, state.formato, 'Todos los formatos');
+}
+function renderChips() {
+  const items = [];
+  if (state.mes) items.push('Mes: ' + mesLabel(state.mes));
+  if (state.tipo) items.push('Tipo: ' + state.tipo);
+  if (state.campana) items.push('Campaña: ' + state.campana);
+  if (state.formato) items.push('Formato: ' + state.formato);
+  $('chips').innerHTML = items.length
+    ? items.map(t => '<span class="chip">' + esc(t) + '</span>').join('')
+    : '<span class="chip" style="background:var(--marfil)">Mostrando todos los datos</span>';
+}
+
+/* ---------- Gráficos ---------- */
+Chart.defaults.font.family = '"Montserrat", system-ui, sans-serif';
+Chart.defaults.font.size = 12;
+Chart.defaults.color = COL.gris;
+Chart.defaults.borderColor = '#F0E6E0';
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.boxWidth = 8;
+Chart.defaults.plugins.tooltip.backgroundColor = COL.cafe;
+Chart.defaults.plugins.tooltip.titleColor = COL.blanco;
+Chart.defaults.plugins.tooltip.bodyColor = COL.nude;
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+Chart.defaults.maintainAspectRatio = false;
+
+function drawChart(id, config, isEmpty) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+  const canvas = $(id);
+  const box = canvas.parentElement;
+  let msg = box.querySelector('.empty');
+  if (isEmpty) {
+    canvas.style.display = 'none';
+    if (!msg) { msg = document.createElement('div'); msg.className = 'empty'; box.appendChild(msg); }
+    msg.textContent = 'Sin datos para los filtros seleccionados';
+    return;
+  }
+  if (msg) msg.remove();
+  canvas.style.display = '';
+  charts[id] = new Chart(canvas, config);
+}
+const solesTick = v => 'S/ ' + v;
+
+function renderCosto(c) {
+  const rows = c.filter(isConv).filter(x => x.resultado > 0)
+    .map(x => ({ n: x.nombre, v: x.inversion / x.resultado, conv: x.resultado, inv: x.inversion }));
+  const agg = {};
+  rows.forEach(r => { const a = agg[r.n] || (agg[r.n] = { n: r.n, conv: 0, inv: 0 }); a.conv += r.conv; a.inv += r.inv; });
+  const list = Object.values(agg).map(a => ({ ...a, v: a.inv / a.conv })).sort((a, b) => a.v - b.v);
+  drawChart('chCosto', {
+    type: 'bar',
+    data: {
+      labels: list.map(r => r.n),
+      datasets: [{
+        label: 'Costo por conversación', data: list.map(r => +r.v.toFixed(2)),
+        backgroundColor: list.map((r, i) => i === 0 ? COL.terracota : COL.empolvado),
+        borderRadius: 6, maxBarThickness: 34
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => { const r = list[ctx.dataIndex]; return [' ' + fmtSoles(r.v) + ' por conversación', ' ' + fmtInt(r.conv) + ' conversaciones', ' ' + fmtSoles(r.inv) + ' invertidos']; } } }
+      },
+      scales: { x: { beginAtZero: true, ticks: { callback: solesTick } }, y: { grid: { display: false }, ticks: { color: COL.cafe } } }
+    }
+  }, !list.length);
+}
+
+function renderMes(c) {
+  const meses = [...new Set(c.map(x => x.mes))].sort();
+  const inv = meses.map(m => sum(c.filter(x => x.mes === m), x => x.inversion));
+  const conv = meses.map(m => sum(c.filter(x => x.mes === m && isConv(x)), x => x.resultado));
+  drawChart('chMes', {
+    data: {
+      labels: meses.map(mesLabel),
+      datasets: [
+        { type: 'line', label: 'Conversaciones', data: conv, yAxisID: 'y1', borderColor: COL.terracota, backgroundColor: COL.terracota, borderWidth: 3, pointRadius: 5, tension: .3 },
+        { type: 'bar', label: 'Inversión (S/)', data: inv.map(v => +v.toFixed(2)), yAxisID: 'y', backgroundColor: COL.champan, borderRadius: 6, maxBarThickness: 60 }
+      ]
+    },
+    options: {
+      plugins: { tooltip: { callbacks: { label: ctx => ctx.dataset.yAxisID === 'y' ? ' Inversión: ' + fmtSoles(ctx.raw) : ' Conversaciones: ' + fmtInt(ctx.raw) } } },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: solesTick } },
+        y1: { beginAtZero: true, position: 'right', grid: { display: false } },
+        x: { grid: { display: false } }
+      }
+    }
+  }, !meses.length);
+}
+
+function renderDiario(d) {
+  const fechas = [...new Set(d.map(x => x.fecha))].sort();
+  const inv = fechas.map(f => +sum(d.filter(x => x.fecha === f), x => x.inversion).toFixed(2));
+  const conv = fechas.map(f => sum(d.filter(x => x.fecha === f), x => x.conv));
+  drawChart('chDiario', {
+    data: {
+      labels: fechas.map(fechaLabel),
+      datasets: [
+        { type: 'line', label: 'Conversaciones', data: conv, yAxisID: 'y1', borderColor: COL.terracota, backgroundColor: COL.terracota, borderWidth: 2.5, pointRadius: 3, tension: .3 },
+        { type: 'bar', label: 'Inversión (S/)', data: inv, yAxisID: 'y', backgroundColor: COL.nude, hoverBackgroundColor: COL.empolvado, borderRadius: 4 }
+      ]
+    },
+    options: {
+      interaction: { mode: 'index', intersect: false },
+      plugins: { tooltip: { callbacks: { title: items => fechas[items[0].dataIndex], label: ctx => ctx.dataset.yAxisID === 'y' ? ' Inversión: ' + fmtSoles(ctx.raw) : ' Conversaciones: ' + fmtInt(ctx.raw) } } },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: solesTick } },
+        y1: { beginAtZero: true, position: 'right', grid: { display: false } },
+        x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 10 } }
+      }
+    }
+  }, !fechas.length);
+}
+
+function renderDia(d) {
+  const ventas = d.filter(x => {
+    const c = DATA.camp.find(k => k.nombre === x.campana);
+    return c ? isConv(c) : (/venta|whatsapp/i.test(x.tipo) || x.conv > 0);
+  });
+  const conv = DIAS.map(dd => sum(ventas.filter(x => x.dia === dd), x => x.conv));
+  const inv = DIAS.map(dd => sum(ventas.filter(x => x.dia === dd), x => x.inversion));
+  const costo = DIAS.map((_, i) => conv[i] ? +(inv[i] / conv[i]).toFixed(2) : null);
+  const max = Math.max(...conv);
+  drawChart('chDia', {
+    data: {
+      labels: DIAS.map(x => x.slice(0, 3)),
+      datasets: [
+        { type: 'line', label: 'Costo por conversación', data: costo, yAxisID: 'y1', borderColor: COL.cafe, backgroundColor: COL.cafe, borderWidth: 2, pointRadius: 4, spanGaps: true, tension: .3 },
+        { type: 'bar', label: 'Conversaciones', data: conv, yAxisID: 'y', backgroundColor: conv.map(v => v === max && v > 0 ? COL.terracota : COL.empolvado), borderRadius: 6, maxBarThickness: 44 }
+      ]
+    },
+    options: {
+      plugins: { tooltip: { callbacks: { title: items => DIAS[items[0].dataIndex], label: ctx => ctx.dataset.yAxisID === 'y1' ? ' Costo/conv.: ' + fmtSoles(ctx.raw) : ' Conversaciones: ' + fmtInt(ctx.raw) } } },
+      scales: {
+        y: { beginAtZero: true },
+        y1: { beginAtZero: true, position: 'right', grid: { display: false }, ticks: { callback: solesTick } },
+        x: { grid: { display: false } }
+      }
+    }
+  }, !ventas.length);
+}
+
+function renderDist(c) {
+  const agg = {};
+  c.forEach(x => { agg[x.nombre] = (agg[x.nombre] || 0) + x.inversion; });
+  const list = Object.entries(agg).sort((a, b) => b[1] - a[1]);
+  const total = sum(list, x => x[1]);
+  drawChart('chDist', {
+    type: 'doughnut',
+    data: { labels: list.map(x => x[0]), datasets: [{ data: list.map(x => +x[1].toFixed(2)), backgroundColor: list.map((_, i) => SERIES[i % SERIES.length]), borderColor: COL.blanco, borderWidth: 3 }] },
+    options: {
+      cutout: '62%',
+      plugins: {
+        legend: { position: 'right', labels: { color: COL.cafe, padding: 12 } },
+        tooltip: { callbacks: { label: ctx => ' ' + fmtSoles(ctx.raw) + ' (' + (ctx.raw / total * 100).toFixed(1) + '%)' } }
+      }
+    }
+  }, !list.length);
+}
+
+function renderEng(a) {
+  const list = [...a].sort((x, y) => (y.reacciones + y.guardados + y.comentarios) - (x.reacciones + x.guardados + x.comentarios));
+  drawChart('chEng', {
+    data: {
+      labels: list.map(x => x.anuncio),
+      datasets: [
+        { type: 'line', label: 'ThruPlays', data: list.map(x => x.thruplays), yAxisID: 'y1', borderColor: COL.cafe, backgroundColor: COL.cafe, borderWidth: 2, pointRadius: 4, tension: .3 },
+        { type: 'bar', label: 'Reacciones', data: list.map(x => x.reacciones), backgroundColor: COL.terracota, stack: 's', borderRadius: 4, maxBarThickness: 48 },
+        { type: 'bar', label: 'Guardados', data: list.map(x => x.guardados), backgroundColor: COL.champan, stack: 's', borderRadius: 4, maxBarThickness: 48 },
+        { type: 'bar', label: 'Comentarios', data: list.map(x => x.comentarios), backgroundColor: COL.arena, stack: 's', borderRadius: 4, maxBarThickness: 48 }
+      ]
+    },
+    options: {
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { color: COL.cafe, autoSkip: false, maxRotation: 30 } },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Interacciones' } },
+        y1: { beginAtZero: true, position: 'right', grid: { display: false }, title: { display: true, text: 'ThruPlays' } }
+      }
+    }
+  }, !list.length);
+}
+
+/* ---------- KPIs ---------- */
+function renderKpis(c, d, a) {
+  const inv = sum(c, x => x.inversion);
+  const ventas = c.filter(isConv);
+  const conv = sum(ventas, x => x.resultado);
+  const invVentas = sum(ventas, x => x.inversion);
+  const impr = sum(c, x => x.impresiones);
+  const alcance = sum(c, x => x.alcance);
+  const ctr = div(sum(c, x => x.ctr * x.impresiones), impr);
+  const cpm = div(inv, impr) * 1000;
+  const inter = sum(c, x => x.reacciones + x.guardados + x.comentarios);
+  const clics = sum(c, x => x.clics);
+  const tiles = [
+    { lbl: 'Inversión total', val: fmtSoles(inv), sub: c.length + (c.length === 1 ? ' campaña' : ' campañas') },
+    { lbl: 'Conversaciones WhatsApp', val: fmtInt(conv), sub: 'en campañas de ventas', hi: true },
+    { lbl: 'Costo por conversación', val: conv ? fmtSoles(invVentas / conv) : '—', sub: 'sobre ' + fmtSoles(invVentas) + ' de ventas', hi: true },
+    { lbl: 'Alcance', val: fmtInt(alcance), sub: 'suma por campaña' },
+    { lbl: 'Impresiones', val: fmtInt(impr), sub: 'frecuencia ' + (alcance ? (impr / alcance).toFixed(2) : '—') },
+    { lbl: 'CTR promedio', val: isFinite(ctr) ? fmtPct(ctr) : '—', sub: fmtInt(clics) + ' clics' },
+    { lbl: 'CPM promedio', val: isFinite(cpm) ? fmtSoles(cpm) : '—', sub: 'costo por mil impresiones' },
+    { lbl: 'Interacciones', val: fmtInt(inter), sub: 'reacciones, guardados y comentarios' }
+  ];
+  $('kpis').innerHTML = tiles.map(t =>
+    '<div class="kpi' + (t.hi ? ' hi' : '') + '"><div class="lbl">' + t.lbl + '</div><div class="val">' + t.val + '</div><div class="sub">' + t.sub + '</div></div>').join('');
+
+  const conCosto = ventas.filter(x => x.resultado > 0).map(x => ({ n: x.nombre, v: x.inversion / x.resultado })).sort((p, q) => p.v - q.v);
+  const parts = [];
+  if (conCosto.length) parts.push('Mejor costo por conversación: <b>' + esc(conCosto[0].n) + '</b> (' + fmtSoles(conCosto[0].v) + ').');
+  if (conCosto.length > 1) { const w = conCosto[conCosto.length - 1]; parts.push('La más cara: ' + esc(w.n) + ' (' + fmtSoles(w.v) + ').'); }
+  const ventasD = d.filter(x => x.conv > 0 || /venta|whatsapp/i.test(x.tipo));
+  if (ventasD.length) {
+    const byDay = DIAS.map(dd => ({ dd, conv: sum(ventasD.filter(x => x.dia === dd), x => x.conv) })).sort((p, q) => q.conv - p.conv);
+    if (byDay[0].conv > 0) parts.push('Día con más conversaciones: <b>' + byDay[0].dd + '</b> (' + fmtInt(byDay[0].conv) + ').');
+  }
+  $('insight').innerHTML = parts.join(' ') || 'No hay campañas de conversaciones con los filtros seleccionados.';
+}
+
+/* ---------- Comparador ---------- */
+function campMetrics(name, c, a) {
+  const rows = c.filter(x => x.nombre === name);
+  const ads = a.filter(x => x.campana === name);
+  const inv = sum(rows, x => x.inversion), impr = sum(rows, x => x.impresiones), res = sum(rows, x => x.resultado);
+  return {
+    inversion: inv, resultado: res, tipoRes: rows[0] ? rows[0].tipoRes : '',
+    costo: div(inv, res), ctr: div(sum(rows, x => x.ctr * x.impresiones), impr), cpm: div(inv, impr) * 1000,
+    alcance: sum(rows, x => x.alcance), impresiones: impr, clics: sum(rows, x => x.clics),
+    inter: sum(rows, x => x.reacciones + x.guardados + x.comentarios), thruplays: sum(ads, x => x.thruplays)
+  };
+}
+function renderCompare(c, a) {
+  const names = [...new Set(c.map(x => x.nombre))];
+  const findName = re => names.find(n => re.test(n));
+  if (!names.includes(state.cmpA)) state.cmpA = findName(/test\s*a\b/i) || names[0] || '';
+  if (!names.includes(state.cmpB) || state.cmpB === state.cmpA) state.cmpB = findName(/test\s*b\b/i) || names.find(n => n !== state.cmpA) || '';
+  const opts = names.map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('');
+  $('cmpA').innerHTML = opts; $('cmpB').innerHTML = opts;
+  $('cmpA').value = state.cmpA; $('cmpB').value = state.cmpB;
+
+  if (names.length < 2) {
+    $('cmpTable').innerHTML = '<tr><td class="empty" style="height:80px">Se necesitan al menos 2 campañas con los filtros actuales para comparar.</td></tr>';
+    $('verdict').style.display = 'none';
+    return;
+  }
+  const A = campMetrics(state.cmpA, c, a), B = campMetrics(state.cmpB, c, a);
+  const rows = [
+    ['Inversión', 'inversion', fmtSoles, 0],
+    [A.tipoRes === B.tipoRes && A.tipoRes ? A.tipoRes : 'Resultados', 'resultado', fmtInt, 1],
+    ['Costo por resultado', 'costo', fmtSoles, -1],
+    ['CTR', 'ctr', fmtPct, 1],
+    ['CPM', 'cpm', fmtSoles, -1],
+    ['Alcance', 'alcance', fmtInt, 1],
+    ['Clics', 'clics', fmtInt, 1],
+    ['Interacciones', 'inter', fmtInt, 1],
+    ['ThruPlays', 'thruplays', fmtInt, 1]
+  ];
+  let winsA = 0, winsB = 0;
+  const body = rows.map(([lbl, k, f, better]) => {
+    const va = A[k], vb = B[k];
+    let wa = false, wb = false;
+    if (better !== 0 && isFinite(va) && isFinite(vb) && va !== vb) {
+      wa = better > 0 ? va > vb : va < vb; wb = !wa;
+      if (wa) winsA++; else winsB++;
+    }
+    const show = v => isFinite(v) ? f(v) : '—';
+    return '<tr><td>' + esc(lbl) + '</td><td class="num' + (wa ? ' win' : '') + '">' + show(va) + '</td><td class="num' + (wb ? ' win' : '') + '">' + show(vb) + '</td></tr>';
+  }).join('');
+  $('cmpTable').innerHTML = '<thead><tr><th>Métrica</th><th class="num">' + esc(state.cmpA) + '</th><th class="num">' + esc(state.cmpB) + '</th></tr></thead><tbody>' + body + '</tbody>';
+
+  let txt;
+  if (A.tipoRes && B.tipoRes && A.tipoRes !== B.tipoRes) {
+    txt = 'Estas campañas tienen objetivos distintos (' + esc(A.tipoRes) + ' vs ' + esc(B.tipoRes) + '), así que compara con cuidado el costo por resultado.';
+  } else if (isFinite(A.costo) && isFinite(B.costo) && A.costo !== B.costo) {
+    const g = A.costo < B.costo ? [state.cmpA, A, B] : [state.cmpB, B, A];
+    const ahorro = (1 - g[1].costo / g[2].costo) * 100;
+    txt = 'Gana <b>' + esc(g[0]) + '</b>: cada resultado cuesta ' + fmtSoles(g[1].costo) + ', un ' + ahorro.toFixed(0) + '% menos que la otra (' + fmtSoles(g[2].costo) + '). Gana en ' + Math.max(winsA, winsB) + ' de ' + (winsA + winsB) + ' métricas.';
+  } else {
+    txt = 'Resultado parejo entre ambas campañas.';
+  }
+  $('verdict').style.display = '';
+  $('verdict').innerHTML = txt;
+}
+
+/* ---------- Tablas ---------- */
+function sortable(tableId, cols, rows, sortState, onSort, bestFn) {
+  const { key, dir } = sortState;
+  const sorted = [...rows].sort((x, y) => {
+    let a = x[key], b = y[key];
+    if (typeof a === 'number' || typeof b === 'number') {
+      const na = isFinite(a), nb = isFinite(b);
+      if (!na && !nb) return 0; if (!na) return 1; if (!nb) return -1;
+      return (a - b) * dir;
+    }
+    return String(a).localeCompare(String(b), 'es') * dir;
+  });
+  const best = bestFn ? bestFn(rows) : null;
+  const head = '<thead><tr>' + cols.map(c =>
+    '<th data-k="' + c.k + '" class="' + (c.num ? 'num' : '') + '">' + c.t + (c.k === key ? ' <span class="arr">' + (dir > 0 ? '▲' : '▼') + '</span>' : '') + '</th>').join('') + '</tr></thead>';
+  const body = sorted.length ? sorted.map(r =>
+    '<tr class="' + (r === best ? 'best' : '') + '">' + cols.map(c => '<td class="' + (c.num ? 'num' : '') + '">' + c.f(r) + '</td>').join('') + '</tr>').join('')
+    : '<tr><td colspan="' + cols.length + '" style="text-align:center;color:var(--gris)">Sin datos para los filtros seleccionados</td></tr>';
+  const t = $(tableId);
+  t.innerHTML = head + '<tbody>' + body + '</tbody>';
+  t.querySelectorAll('th').forEach(th => th.onclick = () => {
+    const k = th.dataset.k;
+    if (sortState.key === k) sortState.dir *= -1; else { sortState.key = k; sortState.dir = cols.find(c => c.k === k).num ? -1 : 1; if (k === 'costo') sortState.dir = 1; }
+    onSort();
+  });
+}
+const money = v => isFinite(v) ? fmtSoles(v) : '—';
+function renderAds(a) {
+  const rows = a.map(x => ({ ...x, inter: x.reacciones + x.guardados + x.comentarios }));
+  sortable('adsTable', [
+    { k: 'anuncio', t: 'Anuncio', f: r => '<b>' + esc(r.anuncio) + '</b>' },
+    { k: 'campana', t: 'Campaña', f: r => esc(r.campana) },
+    { k: 'formato', t: 'Formato', f: r => '<span class="tag">' + esc(r.formato) + '</span>' },
+    { k: 'inversion', t: 'Inversión', num: 1, f: r => fmtSoles(r.inversion) },
+    { k: 'conv', t: 'Conversaciones', num: 1, f: r => fmtInt(r.conv) },
+    { k: 'costo', t: 'Costo/conv.', num: 1, f: r => money(r.costo) },
+    { k: 'ctr', t: 'CTR', num: 1, f: r => fmtPct(r.ctr) },
+    { k: 'thruplays', t: 'ThruPlays', num: 1, f: r => fmtInt(r.thruplays) },
+    { k: 'inter', t: 'Interacciones', num: 1, f: r => fmtInt(r.inter) },
+    { k: 'visitasIG', t: 'Visitas IG', num: 1, f: r => fmtInt(r.visitasIG) }
+  ], rows, state.adsSort, () => renderAds(a), rs => rs.filter(r => isFinite(r.costo)).sort((p, q) => p.costo - q.costo)[0]);
+}
+function renderCamps(c) {
+  sortable('campTable', [
+    { k: 'nombre', t: 'Campaña', f: r => '<b>' + esc(r.nombre) + '</b>' },
+    { k: 'tipo', t: 'Tipo', f: r => '<span class="tag' + (isConv(r) ? ' hi' : '') + '">' + esc(r.tipo) + '</span>' },
+    { k: 'mes', t: 'Mes', f: r => esc(mesLabel(r.mes)) },
+    { k: 'estado', t: 'Estado', f: r => esc(r.estado) },
+    { k: 'inversion', t: 'Inversión', num: 1, f: r => fmtSoles(r.inversion) },
+    { k: 'resultado', t: 'Resultado', num: 1, f: r => fmtInt(r.resultado) + ' <span style="color:var(--gris);font-size:11px">' + esc(r.tipoRes.toLowerCase()) + '</span>' },
+    { k: 'costoCalc', t: 'Costo/resultado', num: 1, f: r => money(r.costoCalc) },
+    { k: 'alcance', t: 'Alcance', num: 1, f: r => fmtInt(r.alcance) },
+    { k: 'impresiones', t: 'Impresiones', num: 1, f: r => fmtInt(r.impresiones) },
+    { k: 'cpm', t: 'CPM', num: 1, f: r => fmtSoles(r.cpm) },
+    { k: 'ctr', t: 'CTR', num: 1, f: r => fmtPct(r.ctr) },
+    { k: 'clics', t: 'Clics', num: 1, f: r => fmtInt(r.clics) }
+  ], c.map(x => ({ ...x, costoCalc: div(x.inversion, x.resultado) })), state.campSort, () => renderCamps(c),
+  rs => rs.filter(r => isConv(r) && isFinite(r.costoCalc)).sort((p, q) => p.costoCalc - q.costoCalc)[0]);
+}
+function renderBrand(c, a) {
+  const otros = c.filter(x => !isConv(x));
+  $('brandSection').style.display = otros.length ? '' : 'none';
+  $('brandCards').innerHTML = otros.map(x => {
+    const ads = a.filter(k => k.campana === x.nombre);
+    const ig = sum(ads, k => k.visitasIG), tp = sum(ads, k => k.thruplays);
+    return '<div class="bcard"><h3>' + esc(x.nombre) + '</h3><dl>' +
+      '<dt>' + esc(x.tipoRes || 'Resultado') + '</dt><dd class="hi">' + fmtInt(x.resultado) + '</dd>' +
+      '<dt>Costo por resultado</dt><dd class="hi">' + money(div(x.inversion, x.resultado)) + '</dd>' +
+      '<dt>Inversión</dt><dd>' + fmtSoles(x.inversion) + '</dd>' +
+      '<dt>Alcance</dt><dd>' + fmtInt(x.alcance) + '</dd>' +
+      '<dt>CPM</dt><dd>' + fmtSoles(x.cpm) + '</dd>' +
+      '<dt>CTR</dt><dd>' + fmtPct(x.ctr) + '</dd>' +
+      (ig ? '<dt>Visitas al perfil IG</dt><dd>' + fmtInt(ig) + '</dd>' : '') +
+      (tp ? '<dt>ThruPlays</dt><dd>' + fmtInt(tp) + '</dd>' : '') +
+      '<dt>Guardados</dt><dd>' + fmtInt(x.guardados) + '</dd>' +
+      '</dl></div>';
+  }).join('');
+}
+
+/* ---------- Render principal ---------- */
+function render() {
+  if (!DATA) return;
+  renderChips();
+  const { c, d, a } = filtered();
+  renderKpis(c, d, a);
+  renderCosto(c);
+  renderMes(c);
+  renderDiario(d);
+  renderDia(d);
+  renderDist(c);
+  renderCompare(c, a);
+  renderAds(a);
+  renderEng(a);
+  renderBrand(c, a);
+  renderCamps(c);
+}
+
+/* ---------- Actualización ---------- */
+function setStatus(kind, text) {
+  $('dot').className = 'dot ' + kind;
+  $('statusText').innerHTML = text;
+}
+async function refresh() {
+  if (loading) return;
+  loading = true;
+  $('refresh').disabled = true;
+  setStatus('load', 'Actualizando…');
+  try {
+    const raw = await fetchData();
+    if (!raw || raw.ok === false) throw new Error(raw && raw.error ? raw.error : 'Respuesta vacía');
+    DATA = prepare(raw);
+    buildFilters();
+    render();
+    $('alert').classList.remove('show');
+    const t = new Date();
+    setStatus('ok', 'Actualizado <b>' + t.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '</b>');
+  } catch (err) {
+    setStatus('err', 'Error al actualizar');
+    $('alert').innerHTML = '<b>No se pudieron cargar los datos.</b> ' + esc(err.message || err) +
+      '. Revisa que la Web App de Apps Script esté implementada con acceso “Cualquier persona” y que la URL en CONFIG.API_URL sea la correcta.' +
+      (DATA ? ' Se muestran los últimos datos cargados.' : '');
+    $('alert').classList.add('show');
+  } finally {
+    loading = false;
+    $('refresh').disabled = false;
+    schedule();
+  }
+}
+function schedule() {
+  clearTimeout(timer);
+  const min = +$('interval').value;
+  if (min > 0) { nextAt = Date.now() + min * 60000; timer = setTimeout(refresh, min * 60000); }
+  else nextAt = 0;
+  tick();
+}
+function tick() {
+  if (!nextAt) { $('countdown').textContent = 'Actualización automática apagada'; return; }
+  const s = Math.max(0, Math.round((nextAt - Date.now()) / 1000));
+  $('countdown').textContent = 'Próxima en ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+/* ---------- Eventos ---------- */
+function bindFilter(id, key) {
+  $(id).addEventListener('change', e => { state[key] = e.target.value; render(); });
+}
+bindFilter('fMes', 'mes');
+bindFilter('fTipo', 'tipo');
+bindFilter('fCampana', 'campana');
+bindFilter('fFormato', 'formato');
+$('cmpA').addEventListener('change', e => { state.cmpA = e.target.value; const { c, a } = filtered(); renderCompare(c, a); });
+$('cmpB').addEventListener('change', e => { state.cmpB = e.target.value; const { c, a } = filtered(); renderCompare(c, a); });
+$('clear').addEventListener('click', () => {
+  state.mes = state.tipo = state.campana = state.formato = '';
+  ['fMes', 'fTipo', 'fCampana', 'fFormato'].forEach(id => $(id).value = '');
+  render();
+});
+$('refresh').addEventListener('click', refresh);
+$('interval').addEventListener('change', e => { store.set('interval', e.target.value); schedule(); });
+
+const saved = store.get('interval');
+$('interval').value = saved !== null && [...$('interval').options].some(o => o.value === saved) ? saved : String(CONFIG.DEFAULT_INTERVAL);
+countdownTimer = setInterval(tick, 1000);
+refresh();
+</script>
+</body>
+</html>
