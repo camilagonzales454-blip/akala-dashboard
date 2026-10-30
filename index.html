@@ -736,17 +736,21 @@ function renderCompare(c, a) {
     ['ThruPlays', 'thruplays', fmtInt, 1]
   ];
   let winsA = 0, winsB = 0;
-  const body = rows.map(([lbl, k, f, better]) => {
+  const cellsA = [], cellsB = [];
+  const show = (v, f) => isFinite(v) ? f(v) : '—';
+  rows.forEach(([lbl, k, f, better]) => {
     const va = A[k], vb = B[k];
     let wa = false, wb = false;
     if (better !== 0 && isFinite(va) && isFinite(vb) && va !== vb) {
       wa = better > 0 ? va > vb : va < vb; wb = !wa;
       if (wa) winsA++; else winsB++;
     }
-    const show = v => isFinite(v) ? f(v) : '—';
-    return '<tr><td>' + esc(lbl) + '</td><td class="num' + (wa ? ' win' : '') + '">' + show(va) + '</td><td class="num' + (wb ? ' win' : '') + '">' + show(vb) + '</td></tr>';
-  }).join('');
-  $('cmpTable').innerHTML = '<thead><tr><th>Métrica</th><th class="num">' + esc(state.cmpA) + '</th><th class="num">' + esc(state.cmpB) + '</th></tr></thead><tbody>' + body + '</tbody>';
+    cellsA.push('<td class="num' + (wa ? ' win' : '') + '">' + show(va, f) + '</td>');
+    cellsB.push('<td class="num' + (wb ? ' win' : '') + '">' + show(vb, f) + '</td>');
+  });
+  $('cmpTable').innerHTML = '<thead><tr><th>Campaña</th>' + rows.map(r => '<th class="num">' + esc(r[0]) + '</th>').join('') + '</tr></thead><tbody>' +
+    '<tr><td><b>' + esc(state.cmpA) + '</b></td>' + cellsA.join('') + '</tr>' +
+    '<tr><td><b>' + esc(state.cmpB) + '</b></td>' + cellsB.join('') + '</tr></tbody>';
 
   let txt;
   if (A.tipoRes && B.tipoRes && A.tipoRes !== B.tipoRes) {
